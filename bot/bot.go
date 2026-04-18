@@ -21,7 +21,6 @@ func Start() {
 
 	log.Println("🤖 Bot started")
 
-	// 🔥 SINGLE UPDATE HANDLER
 	b.RegisterHandler(bot.HandlerTypeMessageText, "", bot.MatchTypePrefix,
 		func(ctx context.Context, b *bot.Bot, update *models.Update) {
 
@@ -29,9 +28,41 @@ func Start() {
 				return
 			}
 
+			tgID := update.Message.From.ID
+
 			// 🟢 /start
 			if update.Message.Text == "/start" {
 
+				// 🔥 CHECK USER VIA API
+				token, exists := services.GetUserToken(tgID)
+
+				if exists {
+					// ✅ Returning user
+					loginURL := os.Getenv("FRONTEND_URL") + "/login?token=" + token
+
+					btn := models.InlineKeyboardButton{
+						Text: "🎮 Play Bingo",
+						WebApp: &models.WebAppInfo{
+							URL: loginURL,
+						},
+					}
+
+					keyboard := models.InlineKeyboardMarkup{
+						InlineKeyboard: [][]models.InlineKeyboardButton{
+							{btn},
+						},
+					}
+
+					b.SendMessage(ctx, &bot.SendMessageParams{
+						ChatID:      update.Message.Chat.ID,
+						Text:        "🎯 Welcome back!\nTap below to play 👇",
+						ReplyMarkup: keyboard,
+					})
+
+					return
+				}
+
+				// 🆕 New user → request contact
 				btn := models.KeyboardButton{
 					Text:           "📱 Share Contact",
 					RequestContact: true,
@@ -54,10 +85,8 @@ func Start() {
 				return
 			}
 
-			// 🟢 CONTACT
+			// 🟢 CONTACT → REGISTER VIA API
 			if update.Message.Contact != nil {
-
-				tgID := update.Message.From.ID
 
 				name := update.Message.From.Username
 				if name == "" {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 )
@@ -34,21 +35,36 @@ func RegisterUser(tgID int64, name, phone string) (string, error) {
 	return result["token"], nil
 }
 func GetUserToken(tgID int64) (string, bool) {
-
-	url := fmt.Sprintf("%s/auth/telegram?telegram_id=%d", os.Getenv("BACKEND_URL"), tgID)
+	url := os.Getenv("BACKEND_URL") + "?telegram_id=" + fmt.Sprint(tgID)
 
 	resp, err := http.Get(url)
 	if err != nil {
+		log.Println("HTTP error:", err)
 		return "", false
 	}
 	defer resp.Body.Close()
 
+	// 🔥 IMPORTANT
+	if resp.StatusCode == 404 {
+		return "", false // user not found
+	}
+
 	if resp.StatusCode != 200 {
+		log.Println("Bad status:", resp.StatusCode)
 		return "", false
 	}
 
 	var result map[string]string
-	json.NewDecoder(resp.Body).Decode(&result)
+	err = json.NewDecoder(resp.Body).Decode(&result)
+	if err != nil {
+		log.Println("Decode error:", err)
+		return "", false
+	}
 
-	return result["token"], true
+	token := result["token"]
+	if token == "" {
+		return "", false
+	}
+
+	return token, true
 }

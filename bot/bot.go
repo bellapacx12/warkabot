@@ -46,10 +46,14 @@ func Start() {
 							URL: loginURL,
 						},
 					}
-
+                    directBtn := models.InlineKeyboardButton{
+	Text: "🌐 Open in Browser",
+	URL:  loginURL,
+}
 					keyboard := models.InlineKeyboardMarkup{
 						InlineKeyboard: [][]models.InlineKeyboardButton{
 							{btn},
+							{directBtn},
 						},
 					}
 
